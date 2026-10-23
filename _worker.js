@@ -1,4 +1,4 @@
-﻿const Version = '2026-10-08 22:23:27';
+const Version = '2026-10-08 22:23:27';
 let config_JSON, 缓存SOCKS5白名单 = null, 调试日志打印 = false;
 let SOCKS5白名单 = ['*tapecontent.net', '*cloudatacdn.com', '*loadshare.org', '*cdn-centaurus.com', 'scholar.google.com'];
 const Pages静态页面 = 'https://edt-pages.github.io', EDT_版本号 = Number(String(Version).replace(/\D+/g, ''));
@@ -14,6 +14,216 @@ const 特征码字典 = [
 	String(2407 * 300 - 10).split('').reverse().join('')
 ];
 const 汇聚订阅_UA = 'v2rayN/edge' + 'tunnel (https://github.com/' + 特征码字典[1] + '/edge' + 'tunnel)';
+///////////////////////////////////////////////////////多语言与国际化支持 (i18n)///////////////////////////////////////////////
+const I18N_DICT = {
+	redirecting: { zh: '重定向中...', en: 'Redirecting...' },
+	missing_proxy_param: { zh: '缺少代理参数', en: 'Missing proxy parameter' },
+	proxy_conn_failed: { zh: '无法连接到代理服务器', en: 'Unable to connect to proxy server' },
+	invalid_response: { zh: '无效响应', en: 'Invalid response' },
+	proxy_hdr_invalid: { zh: '代理检测响应头过长或无效', en: 'Proxy detection response header too long or invalid' },
+	proxy_resp_invalid: { zh: '代理检测响应无效', en: 'Proxy detection response invalid' },
+	config_reset_success: { zh: '配置已重置为默认值', en: 'Configuration reset to defaults' },
+	config_reset_failed: { zh: '配置重置失败，失败原因：', en: 'Configuration reset failed, reason: ' },
+	config_incomplete: { zh: '配置不完整', en: 'Incomplete configuration' },
+	config_saved: { zh: '配置已保存', en: 'Configuration saved successfully' },
+	save_config_failed: { zh: '保存配置失败: ', en: 'Failed to save configuration: ' },
+	custom_ip_saved: { zh: '自定义IP已保存', en: 'Custom clean IPs saved successfully' },
+	save_custom_ip_failed: { zh: '保存自定义IP失败: ', en: 'Failed to save custom clean IPs: ' },
+	unsupported_post: { zh: '不支持的POST请求路径', en: 'Unsupported POST request path' },
+	usage_query_failed: { zh: '查询请求量失败，失败原因：', en: 'Failed to query Cloudflare usage, reason: ' },
+	verify_api_failed: { zh: '验证优选API失败，失败原因：', en: 'Clean IP API verification failed, reason: ' },
+	sub_backend_error: { zh: '订阅转换后端异常：', en: 'Subscription converter backend error: ' },
+	chain_proxy_failed: { zh: '[订阅内容] 链式代理解析失败，已忽略该指令: ', en: '[Subscription] Chain proxy parse failed, instruction ignored: ' },
+	unknown_ip: { zh: '未知IP', en: 'Unknown IP' },
+	isp_cmcc: { zh: 'CF移动优选', en: 'CF CMCC Clean' },
+	isp_cu: { zh: 'CF联通优选', en: 'CF Unicom Clean' },
+	isp_ct: { zh: 'CF电信优选', en: 'CF Telecom Clean' },
+	isp_cf: { zh: 'CF官方优选', en: 'CF Official Clean' },
+	clean_ip_prefix: { zh: 'CF优选', en: 'CF Clean' },
+};
+
+function 获取当前语言(url, env, request) {
+	const queryLang = (url?.searchParams?.get('lang') || '').toLowerCase();
+	if (queryLang === 'en' || queryLang === 'zh') return queryLang;
+	const envLang = (env?.LANG || env?.LANGUAGE || '').toLowerCase();
+	if (envLang.startsWith('en')) return 'en';
+	if (envLang.startsWith('zh')) return 'zh';
+	const acceptLang = (request?.headers?.get('Accept-Language') || '').toLowerCase();
+	if (acceptLang.startsWith('en')) return 'en';
+	return 'zh';
+}
+
+function t(key, lang = 'zh') {
+	return I18N_DICT[key]?.[lang] || I18N_DICT[key]?.zh || key;
+}
+
+function 注入语言切换器(html, initialLang = 'zh') {
+	const switcherScript = `
+<div id="edt-lang-switch-box" style="position:fixed;top:14px;right:16px;z-index:9999999;display:flex;align-items:center;background:rgba(15,23,42,0.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:24px;padding:4px 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,0.35);cursor:pointer;user-select:none;transition:all 0.2s ease;">
+  <span id="edt-lang-btn" style="color:#38bdf8;display:flex;align-items:center;gap:5px;">🌐 <span id="edt-lang-text">${initialLang === 'en' ? 'English' : '中文'}</span></span>
+</div>
+<script>
+(function() {
+  const translations = {
+    "管理后台": "Admin Dashboard",
+    "登录设置页面": "Login & Settings",
+    "立即登录": "Log In",
+    "请输入密码": "Enter password",
+    "密码错误": "Incorrect password",
+    "我是小白！我想简单点！": "Quick Setup (Beginner)",
+    "⚠️重置配置": "⚠️ Reset Config",
+    "👋退出登录": "👋 Logout",
+    "加载中...": "Loading...",
+    "保存配置": "Save Config",
+    "保存": "Save",
+    "取消": "Cancel",
+    "确定": "OK",
+    "确认": "Confirm",
+    "重置": "Reset",
+    "刷新": "Refresh",
+    "复制": "Copy",
+    "编辑": "Edit",
+    "删除": "Delete",
+    "添加": "Add",
+    "关闭": "Close",
+    "开启": "Enabled",
+    "启用": "Enable",
+    "停用": "Disable",
+    "成功": "Success",
+    "失败": "Failed",
+    "默认": "Default",
+    "全局": "Global",
+    "白名单": "Whitelist",
+    "节点链接格式": "Node Link Format",
+    "📱二维码": "📱 QR Code",
+    "复制节点": "Copy Node",
+    "自适应订阅": "Adaptive Subscription",
+    "复制订阅": "Copy Subscription",
+    "Base64订阅": "Base64 Subscription",
+    "Clash订阅": "Clash Subscription",
+    "SingBox订阅": "SingBox Subscription",
+    "Surge订阅": "Surge Subscription",
+    "Loon订阅": "Loon Subscription",
+    "Shadowrocket订阅": "Shadowrocket Subscription",
+    "QuantumultX订阅": "QuantumultX Subscription",
+    "优选订阅模式": "Clean IP Mode",
+    "随机优选数量": "Random Clean IPs Count",
+    "指定优选端口": "Specific Clean IP Port",
+    "自定义优选": "Custom Clean IPs",
+    "优选订阅生成器": "Clean Subscription Generator",
+    "本地优选IP库": "Local Clean IP Pool",
+    "更新订阅": "Update Subscription",
+    "反代IP": "Proxy IP",
+    "链式代理": "Chain Proxy",
+    "传输协议": "Transport Protocol",
+    "跳过证书验证": "Allow Insecure TLS",
+    "启用0RTT": "Enable 0-RTT",
+    "随机路径": "Random Path",
+    "加密方式": "Cipher",
+    "协议类型": "Protocol Type",
+    "伪装地址": "Decoy URL",
+    "伪装域名": "Decoy Domain",
+    "自定义域": "Custom Domain",
+    "访问日志": "Access Logs",
+    "请求统计": "Traffic Stats",
+    "刷新日志": "Refresh Logs",
+    "清空日志": "Clear Logs",
+    "距离重置还有": "Reset in:",
+    "小时": "hours",
+    "分钟": "mins",
+    "秒": "secs",
+    "👋 地域访问限制": "👋 Regional Access Restriction",
+    "继续使用当前项目": "Continue with current project"
+  };
+
+  let curLang = localStorage.getItem('edt_lang') || '${initialLang}' || 'zh';
+
+  function updateBtnText() {
+    const t = document.getElementById('edt-lang-text');
+    if (t) t.textContent = curLang === 'en' ? 'English' : '中文';
+  }
+
+  function applyTranslation(root) {
+    if (curLang !== 'en' || !root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const trimmed = node.nodeValue?.trim();
+      if (trimmed && translations[trimmed]) {
+        node.nodeValue = node.nodeValue.replace(trimmed, translations[trimmed]);
+      }
+    }
+    const els = root.querySelectorAll ? root.querySelectorAll('[placeholder], [title]') : [];
+    els.forEach(el => {
+      if (el.placeholder && translations[el.placeholder.trim()]) {
+        el.placeholder = translations[el.placeholder.trim()];
+      }
+      if (el.title && translations[el.title.trim()]) {
+        el.title = translations[el.title.trim()];
+      }
+    });
+  }
+
+  function toggleLang() {
+    curLang = curLang === 'en' ? 'zh' : 'en';
+    localStorage.setItem('edt_lang', curLang);
+    const u = new URL(window.location.href);
+    u.searchParams.set('lang', curLang);
+    window.location.href = u.toString();
+  }
+
+  function init() {
+    const btn = document.getElementById('edt-lang-switch-box');
+    if (btn) btn.onclick = toggleLang;
+    updateBtnText();
+    if (curLang === 'en') {
+      applyTranslation(document.body);
+      const observer = new MutationObserver(muts => {
+        for (const m of muts) {
+          if (m.type === 'childList') {
+            m.addedNodes.forEach(n => {
+              if (n.nodeType === Node.ELEMENT_NODE) applyTranslation(n);
+              else if (n.nodeType === Node.TEXT_NODE && translations[n.nodeValue?.trim()]) {
+                n.nodeValue = translations[n.nodeValue.trim()];
+              }
+            });
+          } else if (m.type === 'characterData' && translations[m.target.nodeValue?.trim()]) {
+            m.target.nodeValue = translations[m.target.nodeValue.trim()];
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+`;
+	if (html.includes('</body>')) {
+		return html.replace('</body>', `${switcherScript}</body>`);
+	}
+	return html + switcherScript;
+}
+
+async function 响应静态页面(pathWithSearch, lang, status = 200, statusText = 'OK') {
+	const res = await fetch(Pages静态页面 + pathWithSearch);
+	const contentType = res.headers.get('content-type') || '';
+	if (!contentType.includes('text/html')) return res;
+	let html = await res.text();
+	html = 注入语言切换器(html, lang);
+	const headers = new Headers(res.headers);
+	headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+	headers.set('Pragma', 'no-cache');
+	headers.set('Expires', '0');
+	headers.delete('content-length');
+	return new Response(html, { status: res.status || status, statusText: res.statusText || statusText, headers });
+}
+
 ///////////////////////////////////////////////////////主程序入口///////////////////////////////////////////////
 export default {
 	async fetch(request, env, ctx) {
@@ -26,6 +236,7 @@ export default {
 		}
 		const url = new URL(请求URL文本);
 		const UA = request.headers.get('User-Agent') || 'null';
+		const lang = 获取当前语言(url, env, request);
 		const upgradeHeader = (request.headers.get('Upgrade') || '').toLowerCase(), contentType = (request.headers.get('content-type') || '').toLowerCase();
 		const 管理员密码 = env.ADMIN || env.admin || env.PASSWORD || env.password || env.pswd || env.TOKEN || env.KEY || env.UUID || env.uuid;
 		const 加密秘钥 = env.KEY || '勿动此默认密钥，有需求请自行通过添加变量KEY进行修改';
@@ -47,7 +258,7 @@ export default {
 			默认反代IP = proxyIPs[Math.floor(Math.random() * proxyIPs.length)];
 			默认反代兜底 = false;
 		};
-		const 访问IP = request.headers.get('CF-Connecting-IP') || request.headers.get('True-Client-IP') || request.headers.get('X-Real-IP') || request.headers.get('X-Forwarded-For') || request.headers.get('Fly-Client-IP') || request.headers.get('X-Appengine-Remote-Addr') || request.headers.get('X-Cluster-Client-IP') || '未知IP';
+		const 访问IP = request.headers.get('CF-Connecting-IP') || request.headers.get('True-Client-IP') || request.headers.get('X-Real-IP') || request.headers.get('X-Forwarded-For') || request.headers.get('Fly-Client-IP') || request.headers.get('X-Appengine-Remote-Addr') || request.headers.get('X-Cluster-Client-IP') || t('unknown_ip', lang);
 		const [本机标识头, 本机标识键] = 获取本机标识(userID);
 		if (缓存SOCKS5白名单 === null) {
 			if (env.GO2SOCKS5) SOCKS5白名单 = [...new Set(SOCKS5白名单.concat(await 整理成数组(env.GO2SOCKS5)))];
@@ -81,17 +292,17 @@ export default {
 			return await 处理叉HTTP请求(request, userID, 反代上下文);
 		} else {
 			if (url.protocol === 'http:') return Response.redirect(url.href.replace(`http://${url.hostname}`, `https://${url.hostname}`), 301);
-			if (!管理员密码) return fetch(Pages静态页面 + '/noADMIN').then(r => { const headers = new Headers(r.headers); headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); headers.set('Pragma', 'no-cache'); headers.set('Expires', '0'); return new Response(r.body, { status: 404, statusText: r.statusText, headers }) });
+			if (!管理员密码) return 响应静态页面('/noADMIN', lang, 404, 'Not Found');
 			if (env.KV && typeof env.KV.get === 'function') {
 				const 区分大小写访问路径 = url.pathname.slice(1);
 				if (区分大小写访问路径 === 加密秘钥 && 加密秘钥 !== '勿动此默认密钥，有需求请自行通过添加变量KEY进行修改') {//快速订阅
 					const params = new URLSearchParams(url.search);
 					params.set('token', await MD5MD5(host + userID));
-					return new Response('重定向中...', { status: 302, headers: { 'Location': `/sub?${params.toString()}` } });
+					return new Response(t('redirecting', lang), { status: 302, headers: { 'Location': `/sub?${params.toString()}` } });
 				} else if (访问路径 === 'login') {//处理登录页面和登录请求
 					const cookies = request.headers.get('Cookie') || '';
 					const authCookie = cookies.split(';').find(c => c.trim().startsWith('auth='))?.split('=')[1];
-					if (authCookie == await MD5MD5(UA + 加密秘钥 + 管理员密码)) return new Response('重定向中...', { status: 302, headers: { 'Location': '/admin' } });
+					if (authCookie == await MD5MD5(UA + 加密秘钥 + 管理员密码)) return new Response(t('redirecting', lang), { status: 302, headers: { 'Location': '/admin' + (url.searchParams.has('lang') ? `?lang=${lang}` : '') } });
 					if (request.method === 'POST') {
 						const formData = await request.text();
 						const params = new URLSearchParams(formData);
@@ -103,12 +314,12 @@ export default {
 							return 响应;
 						}
 					}
-					return fetch(Pages静态页面 + '/login');
+					return 响应静态页面('/login' + url.search, lang);
 				} else if (访问路径 === 'admin' || 访问路径.startsWith('admin/')) {//验证cookie后响应管理页面
 					const cookies = request.headers.get('Cookie') || '';
 					const authCookie = cookies.split(';').find(c => c.trim().startsWith('auth='))?.split('=')[1];
 					// 没有cookie或cookie错误，跳转到/login页面
-					if (!authCookie || authCookie !== await MD5MD5(UA + 加密秘钥 + 管理员密码)) return new Response('重定向中...', { status: 302, headers: { 'Location': '/login' } });
+					if (!authCookie || authCookie !== await MD5MD5(UA + 加密秘钥 + 管理员密码)) return new Response(t('redirecting', lang), { status: 302, headers: { 'Location': '/login' + (url.searchParams.has('lang') ? `?lang=${lang}` : '') } });
 					if (访问路径 === 'admin/log.json') {// 读取日志内容
 						const 读取日志内容 = await env.KV.get('log.json') || '[]';
 						return new Response(读取日志内容, { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
@@ -117,7 +328,7 @@ export default {
 							const Usage_JSON = await getCloudflareUsage(url.searchParams.get('Email'), url.searchParams.get('GlobalAPIKey'), url.searchParams.get('AccountID'), url.searchParams.get('APIToken'));
 							return new Response(JSON.stringify(Usage_JSON, null, 2), { status: 200, headers: { 'Content-Type': 'application/json' } });
 						} catch (err) {
-							const errorResponse = { msg: '查询请求量失败，失败原因：' + err.message, error: err.message };
+							const errorResponse = { msg: t('usage_query_failed', lang) + err.message, error: err.message };
 							return new Response(JSON.stringify(errorResponse, null, 2), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 						}
 					} else if (区分大小写访问路径 === 'admin/getADDAPI') {// 验证优选API
@@ -130,14 +341,14 @@ export default {
 								优选API的IP = 优选API的IP.map(item => item.replace(/#(.+)$/, (_, remark) => '#' + decodeURIComponent(remark)));
 								return new Response(JSON.stringify({ success: true, data: 优选API的IP }, null, 2), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							} catch (err) {
-								const errorResponse = { msg: '验证优选API失败，失败原因：' + err.message, error: err.message };
+								const errorResponse = { msg: t('verify_api_failed', lang) + err.message, error: err.message };
 								return new Response(JSON.stringify(errorResponse, null, 2), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							}
 						}
 						return new Response(JSON.stringify({ success: false, data: [] }, null, 2), { status: 403, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 					} else if (访问路径 === 'admin/check') {// 代理检查
 						const 代理协议 = ['socks5', 'http', 'https', 'turn', 'sstp'].find(类型 => url.searchParams.has(类型)) || null;
-						if (!代理协议) return new Response(JSON.stringify({ error: '缺少代理参数' }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+						if (!代理协议) return new Response(JSON.stringify({ error: t('missing_proxy_param', lang) }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 						const 代理参数 = url.searchParams.get(代理协议);
 						const startTime = Date.now();
 						let 检测代理响应;
@@ -159,7 +370,7 @@ export default {
 												: (代理协议 === 'https' && isIPHostname(hostname)
 													? await httpsConnect(检测主机, 检测端口, new Uint8Array(0), TCP连接, checkParsed)
 													: await httpConnect(检测主机, 检测端口, new Uint8Array(0), 代理协议 === 'https', TCP连接, checkParsed));
-									if (!tcpSocket) throw new Error('无法连接到代理服务器');
+									if (!tcpSocket) throw new Error(t('proxy_conn_failed', lang));
 									tlsSocket = new TlsClient(tcpSocket, { serverName: 检测主机, insecure: true });
 									await tlsSocket.handshake();
 									await tlsSocket.write(encoder.encode(`GET /cdn-cgi/trace HTTP/1.1\r\nHost: ${检测主机}\r\nUser-Agent: Mozilla/5.0\r\nConnection: close\r\n\r\n`));
@@ -178,7 +389,7 @@ export default {
 												const statusLine = headers.split('\r\n')[0] || '';
 												const statusMatch = statusLine.match(/HTTP\/\d\.\d\s+(\d+)/);
 												const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : NaN;
-												if (!Number.isFinite(statusCode) || statusCode < 200 || statusCode >= 300) throw new Error(`代理检测请求失败: ${statusLine || '无效响应'}`);
+												if (!Number.isFinite(statusCode) || statusCode < 200 || statusCode >= 300) throw new Error(`${lang === 'en' ? 'Proxy test request failed' : '代理检测请求失败'}: ${statusLine || t('invalid_response', lang)}`);
 												const lengthMatch = headers.match(/\r\nContent-Length:\s*(\d+)/i);
 												if (lengthMatch) contentLength = parseInt(lengthMatch[1], 10);
 												chunked = /\r\nTransfer-Encoding:\s*chunked/i.test(headers);
@@ -187,11 +398,11 @@ export default {
 										if (headerEndIndex !== -1 && contentLength !== null && responseBuffer.length >= headerEndIndex + contentLength) break;
 										if (headerEndIndex !== -1 && chunked && decoder.decode(responseBuffer).includes('\r\n0\r\n\r\n')) break;
 									}
-									if (headerEndIndex === -1) throw new Error('代理检测响应头过长或无效');
+									if (headerEndIndex === -1) throw new Error(t('proxy_hdr_invalid', lang));
 									const response = decoder.decode(responseBuffer);
 									const ip = response.match(/(?:^|\n)ip=(.*)/)?.[1];
 									const loc = response.match(/(?:^|\n)loc=(.*)/)?.[1];
-									if (!ip || !loc) throw new Error('代理检测响应无效');
+									if (!ip || !loc) throw new Error(t('proxy_resp_invalid', lang));
 									检测代理响应 = { success: true, proxy: 代理协议 + "://" + 完整代理参数, ip, loc, responseTime: Date.now() - startTime };
 								} finally {
 									try { tlsSocket ? tlsSocket.close() : await tcpSocket?.close?.() } catch (e) { }
@@ -211,10 +422,10 @@ export default {
 						try {
 							config_JSON = await 读取config_JSON(env, host, userID, UA, true);
 							ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Init_Config', config_JSON));
-							config_JSON.init = '配置已重置为默认值';
+							config_JSON.init = t('config_reset_success', lang);
 							return new Response(JSON.stringify(config_JSON, null, 2), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 						} catch (err) {
-							const errorResponse = { msg: '配置重置失败，失败原因：' + err.message, error: err.message };
+							const errorResponse = { msg: t('config_reset_failed', lang) + err.message, error: err.message };
 							return new Response(JSON.stringify(errorResponse, null, 2), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 						}
 					} else if (request.method === 'POST') {// 处理 KV 操作（POST 请求）
@@ -222,15 +433,15 @@ export default {
 							try {
 								const newConfig = await request.json();
 								// 验证配置完整性
-								if (!newConfig.UUID || !newConfig.HOST) return new Response(JSON.stringify({ error: '配置不完整' }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								if (!newConfig.UUID || !newConfig.HOST) return new Response(JSON.stringify({ error: t('config_incomplete', lang) }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 
 								// 保存到 KV
 								await env.KV.put('config.json', JSON.stringify(newConfig, null, 2));
 								ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Save_Config', config_JSON));
-								return new Response(JSON.stringify({ success: true, message: '配置已保存' }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								return new Response(JSON.stringify({ success: true, message: t('config_saved', lang) }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							} catch (error) {
-								console.error('保存配置失败:', error);
-								return new Response(JSON.stringify({ error: '保存配置失败: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								console.error(t('save_config_failed', lang), error);
+								return new Response(JSON.stringify({ error: t('save_config_failed', lang) + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							}
 						} else if (访问路径 === 'admin/cf.json') { // 保存cf.json配置
 							try {
@@ -246,17 +457,17 @@ export default {
 									} else if (newConfig.UsageAPI) {
 										CF_JSON.UsageAPI = newConfig.UsageAPI;
 									} else {
-										return new Response(JSON.stringify({ error: '配置不完整' }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+										return new Response(JSON.stringify({ error: t('config_incomplete', lang) }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 									}
 								}
 
 								// 保存到 KV
 								await env.KV.put('cf.json', JSON.stringify(CF_JSON, null, 2));
 								ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Save_Config', config_JSON));
-								return new Response(JSON.stringify({ success: true, message: '配置已保存' }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								return new Response(JSON.stringify({ success: true, message: t('config_saved', lang) }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							} catch (error) {
-								console.error('保存配置失败:', error);
-								return new Response(JSON.stringify({ error: '保存配置失败: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								console.error(t('save_config_failed', lang), error);
+								return new Response(JSON.stringify({ error: t('save_config_failed', lang) + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							}
 						} else if (访问路径 === 'admin/tg.json') { // 保存tg.json配置
 							try {
@@ -265,26 +476,26 @@ export default {
 									const TG_JSON = { BotToken: null, ChatID: null };
 									await env.KV.put('tg.json', JSON.stringify(TG_JSON, null, 2));
 								} else {
-									if (!newConfig.BotToken || !newConfig.ChatID) return new Response(JSON.stringify({ error: '配置不完整' }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+									if (!newConfig.BotToken || !newConfig.ChatID) return new Response(JSON.stringify({ error: t('config_incomplete', lang) }), { status: 400, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 									await env.KV.put('tg.json', JSON.stringify(newConfig, null, 2));
 								}
 								ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Save_Config', config_JSON));
-								return new Response(JSON.stringify({ success: true, message: '配置已保存' }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								return new Response(JSON.stringify({ success: true, message: t('config_saved', lang) }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							} catch (error) {
-								console.error('保存配置失败:', error);
-								return new Response(JSON.stringify({ error: '保存配置失败: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								console.error(t('save_config_failed', lang), error);
+								return new Response(JSON.stringify({ error: t('save_config_failed', lang) + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							}
 						} else if (区分大小写访问路径 === 'admin/ADD.txt') { // 保存自定义优选IP
 							try {
 								const customIPs = await request.text();
 								await env.KV.put('ADD.txt', customIPs);// 保存到 KV
 								ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Save_Custom_IPs', config_JSON));
-								return new Response(JSON.stringify({ success: true, message: '自定义IP已保存' }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								return new Response(JSON.stringify({ success: true, message: t('custom_ip_saved', lang) }), { status: 200, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							} catch (error) {
-								console.error('保存自定义IP失败:', error);
-								return new Response(JSON.stringify({ error: '保存自定义IP失败: ' + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+								console.error(t('save_custom_ip_failed', lang), error);
+								return new Response(JSON.stringify({ error: t('save_custom_ip_failed', lang) + error.message }), { status: 500, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 							}
-						} else return new Response(JSON.stringify({ error: '不支持的POST请求路径' }), { status: 404, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
+						} else return new Response(JSON.stringify({ error: t('unsupported_post', lang) }), { status: 404, headers: { 'Content-Type': 'application/json;charset=utf-8' } });
 					} else if (访问路径 === 'admin/config.json') {// 处理 admin/config.json 请求，返回JSON
 						return new Response(JSON.stringify(config_JSON, null, 2), { status: 200, headers: { 'Content-Type': 'application/json' } });
 					} else if (区分大小写访问路径 === 'admin/ADD.txt') {// 处理 admin/ADD.txt 请求，返回本地优选IP
@@ -296,9 +507,9 @@ export default {
 					}
 
 					ctx.waitUntil(请求日志记录(env, request, 访问IP, 'Admin_Login', config_JSON));
-					return fetch(Pages静态页面 + '/admin' + url.search);
+					return 响应静态页面('/admin' + url.search, lang);
 				} else if (访问路径 === 'logout' || uuidRegex.test(访问路径)) {//清除cookie并跳转到登录页面
-					const 响应 = new Response('重定向中...', { status: 302, headers: { 'Location': '/login' } });
+					const 响应 = new Response(t('redirecting', lang), { status: 302, headers: { 'Location': '/login' + (url.searchParams.has('lang') ? `?lang=${lang}` : '') } });
 					响应.headers.set('Set-Cookie', 'auth=; Path=/; Max-Age=0; HttpOnly');
 					return 响应;
 				} else if (访问路径 === 'sub') {//处理订阅请求
@@ -461,9 +672,9 @@ export default {
 								if (response.ok) {
 									订阅内容 = await response.text();
 									if (url.searchParams.has('surge') || ua.includes('surge')) 订阅内容 = Surge订阅配置文件热补丁(订阅内容, url.protocol + '//' + url.host + '/sub?token=' + 订阅TOKEN + '&surge', config_JSON);
-								} else return new Response('订阅转换后端异常：' + response.statusText, { status: response.status });
+								} else return new Response(t('sub_backend_error', lang) + response.statusText, { status: response.status });
 							} catch (error) {
-								return new Response('订阅转换后端异常：' + error.message, { status: 403 });
+								return new Response(t('sub_backend_error', lang) + error.message, { status: 403 });
 							}
 						}
 
@@ -499,7 +710,7 @@ export default {
 					const authCookie = cookies.split(';').find(c => c.trim().startsWith('auth='))?.split('=')[1];
 					if (authCookie && authCookie == await MD5MD5(UA + 加密秘钥 + 管理员密码)) return fetch(new Request('https://speed.cloudflare.com/locations', { headers: { 'Referer': 'https://speed.cloudflare.com/' } }));
 				} else if (访问路径 === 'robots.txt') return new Response('User-agent: *\nDisallow: /', { status: 200, headers: { 'Content-Type': 'text/plain; charset=UTF-8' } });
-			} else if (!envUUID) return fetch(Pages静态页面 + '/noKV').then(r => { const headers = new Headers(r.headers); headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); headers.set('Pragma', 'no-cache'); headers.set('Expires', '0'); return new Response(r.body, { status: 404, statusText: r.statusText, headers }) });
+			} else if (!envUUID) return 响应静态页面('/noKV' + url.search, lang, 404, 'Not Found');
 		}
 
 		let 伪装页URL = env.URL || 'nginx';
@@ -5877,16 +6088,17 @@ function 识别运营商(request) {
 
 async function 生成随机IP(request, count = 16, 指定端口 = -1) {
 	const url = new URL(request.url);
+	const lang = (url.searchParams.get('lang') || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 	const 查询参数运营商 = String(url.searchParams.get('cnIspCode') || '').toLowerCase();
 	const 运营商文件标识 = ['ct', 'cu', 'cmcc', 'cf'].includes(查询参数运营商) ? 查询参数运营商 : 识别运营商(request);
 	const 运营商名称映射 = {
-		cmcc: 'CF移动优选',
-		cu: 'CF联通优选',
-		ct: 'CF电信优选',
-		cf: 'CF官方优选',
+		cmcc: lang === 'en' ? 'CF CMCC Clean' : 'CF移动优选',
+		cu: lang === 'en' ? 'CF Unicom Clean' : 'CF联通优选',
+		ct: lang === 'en' ? 'CF Telecom Clean' : 'CF电信优选',
+		cf: lang === 'en' ? 'CF Official Clean' : 'CF官方优选',
 	};
 	const cidr_url = 运营商文件标识 === 'cf' ? `https://raw.githubusercontent.com/${特征码字典[1]}/${特征码字典[1]}/main/CF-CIDR.txt` : `https://raw.githubusercontent.com/${特征码字典[1]}/${特征码字典[1]}/main/CF-CIDR/${运营商文件标识}.txt`;
-	const cfname = 运营商名称映射[运营商文件标识] || 'CF官方优选';
+	const cfname = 运营商名称映射[运营商文件标识] || (lang === 'en' ? 'CF Official Clean' : 'CF官方优选');
 	const cfport = [443, 2053, 2083, 2087, 2096, 8443];
 	let cidrList = [];
 	try { const res = await fetch(cidr_url); cidrList = res.ok ? await 整理成数组(await res.text()) : ['104.16.0.0/13'] } catch { cidrList = ['104.16.0.0/13'] }
@@ -6152,7 +6364,8 @@ async function 请求优选API(urls, 默认端口 = '443', uid = "000000", 超�
 					dataLines.forEach(line => {
 						const cols = line.split(',').map(c => c.trim());
 						const wrappedIP = IPV6_PATTERN.test(cols[ipIdx]) ? `[${cols[ipIdx]}]` : cols[ipIdx];
-						const ipItem = `${wrappedIP}:${port}#CF优选 ${cols[delayIdx]}ms ${cols[speedIdx]}MB/s`;
+						const cleanPrefix = (parsedUrl?.searchParams?.get('lang') || '').toLowerCase().startsWith('en') ? 'CF Clean' : 'CF优选';
+						const ipItem = `${wrappedIP}:${port}#${cleanPrefix} ${cols[delayIdx]}ms ${cols[speedIdx]}MB/s`;
 						// 处理第一个数组 - 优选IP
 						if (API备注名) {
 							const 处理后IP = `${ipItem} [${API备注名}]`;
